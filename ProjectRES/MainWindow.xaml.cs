@@ -83,6 +83,8 @@ namespace ProjectRES
                 DMDO_270 = 3
             }
         }
+        private readonly HashSet<string> uniqueResolutions = new HashSet<string>();
+
         public MainWindow()
         {
             InitializeComponent();
@@ -91,75 +93,102 @@ namespace ProjectRES
                 ComboBoxItem item = new ComboBoxItem();
                 item.Content = screen.DeviceName;
                 comboBox.Items.Add(item);
+                comboBox.SelectedIndex = 0;
             }
         }
         private void comboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            string selectedScreen = ((ComboBoxItem)comboBox.SelectedItem).Content.ToString();
+            string selectedScreen = ((ComboBoxItem)comboBox.SelectedItem)?.Content.ToString();
 
-            foreach (var screen in System.Windows.Forms.Screen.AllScreens)
+            if (selectedScreen != null)
             {
-                if (screen.DeviceName == selectedScreen)
+                listBox.Items.Clear();
+
+                foreach (var screen in System.Windows.Forms.Screen.AllScreens)
                 {
-                    listBox.Items.Clear();
-
-                    DisplaySettings.DEVMODE dm = new DisplaySettings.DEVMODE();
-                    int modeNum = 0;
-                    var displayModes = new List<DisplaySettings.DEVMODE>();
-
-                    // Перечисляем все режимы дисплея для выбранного экрана
-                    while (DisplaySettings.EnumDisplaySettings(screen.DeviceName, modeNum, ref dm))
+                    if (screen.DeviceName == selectedScreen)
                     {
-                        displayModes.Add(dm);
-                        modeNum++;
+                        DisplaySettings.DEVMODE dm = new DisplaySettings.DEVMODE();
+                        int modeNum = 0;
+
+                        // Добавляем разрешения в список, но не добавляем их в HashSet
+                        List<string> resolutions = new List<string>();
+
+                        while (DisplaySettings.EnumDisplaySettings(screen.DeviceName, modeNum, ref dm))
+                        {
+                            string resolution = $"{dm.dmPelsWidth}x{dm.dmPelsHeight}, {dm.dmDisplayFrequency}Hz";
+                            if (uniqueResolutions.Add(resolution)) // Проверяем на уникальность
+                            {
+                                if (dm.dmBitsPerPel == 32) // Проверяем, является ли разрешение системным
+                                {
+                                    resolutions.Add(resolution);
+                                }
+                            }
+                            modeNum++;
+                        }
+
+                        // Добавляем разрешения в список в обратном порядке
+                        for (int i = resolutions.Count - 1; i >= 0; i--)
+                        {
+                            listBox.Items.Add(resolutions[i]);
+                        }
+
+                        break;
                     }
-
-                    // Упорядочиваем режимы дисплея по разрешению
-                    var orderedDisplayModes = displayModes
-                        .OrderByDescending(d => d.dmPelsWidth * d.dmPelsHeight)
-                        .ThenByDescending(d => d.dmDisplayFrequency);
-
-                    foreach (var mode in orderedDisplayModes)
-                    {
-                        listBox.Items.Add($"{mode.dmPelsWidth}x{mode.dmPelsHeight}, {mode.dmDisplayFrequency}Hz");
-                    }
-
-                    break;
                 }
             }
         }
-       private void changeResolutionButton_Click(object sender, RoutedEventArgs e)
-       {
-            // Получаем выбранное разрешение и частоту обновления
-            string selectedResolution = listBox.SelectedItem.ToString();
-            var match = Regex.Match(selectedResolution, @"(\d+)x(\d+), (\d+)Hz");
-            if (!match.Success) return;
-            int width = int.Parse(match.Groups[1].Value);
-            int height = int.Parse(match.Groups[2].Value);
-            int frequency = int.Parse(match.Groups[3].Value);
 
-            // Находим выбранный экран
-            string selectedScreen = ((ComboBoxItem)comboBox.SelectedItem).Content.ToString();
-            var screen = System.Windows.Forms.Screen.AllScreens.FirstOrDefault(s => s.DeviceName == selectedScreen);
-            if (screen == null) return;
+        private void txtSearch_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            string searchText = txtSearch.Text.Trim().ToLower();
 
-            // Находим режим дисплея с выбранным разрешением и частотой обновления
-            DisplaySettings.DEVMODE dm = new DisplaySettings.DEVMODE();
-            int modeNum = 0;
-            while (DisplaySettings.EnumDisplaySettings(screen.DeviceName, modeNum, ref dm))
+            listBox.Items.Clear();
+            foreach (string resolution in uniqueResolutions)
             {
-                if (dm.dmPelsWidth == width && dm.dmPelsHeight == height && dm.dmDisplayFrequency == frequency)
+                if (resolution.ToLower().Contains(searchText))
                 {
-                    // Меняем разрешение экрана
-                    int result = DisplaySettings.ChangeDisplaySettingsEx(screen.DeviceName, ref dm, IntPtr.Zero, DisplaySettings.CDS_UPDATEREGISTRY, IntPtr.Zero);
-                    if (result != DisplaySettings.DISP_CHANGE_SUCCESSFUL)
-                    {
-                        MessageBox.Show("Не удалось изменить разрешение экрана.");
-                    }
-                    break;
+                    listBox.Items.Add(resolution);
                 }
-                modeNum++;
             }
-       }
+        }
+        private void changeResolutionButton_Click(object sender, RoutedEventArgs e)
+        {
+            string selectedResolution = listBox.SelectedItem?.ToString();
+
+            if (selectedResolution != null)
+            {
+                var match = Regex.Match(selectedResolution, @"(\d+)x(\d+), (\d+)Hz");
+                if (match.Success)
+                {
+                    int width = int.Parse(match.Groups[1].Value);
+                    int height = int.Parse(match.Groups[2].Value);
+                    int frequency = int.Parse(match.Groups[3].Value);
+
+                    string selectedScreen = ((ComboBoxItem)comboBox.SelectedItem)?.Content.ToString();
+                    var screen = System.Windows.Forms.Screen.AllScreens.FirstOrDefault(s => s.DeviceName == selectedScreen);
+
+                    if (screen != null)
+                    {
+                        DisplaySettings.DEVMODE dm = new DisplaySettings.DEVMODE();
+                        int modeNum = 0;
+
+                        while (DisplaySettings.EnumDisplaySettings(screen.DeviceName, modeNum, ref dm))
+                        {
+                            if (dm.dmPelsWidth == width && dm.dmPelsHeight == height && dm.dmDisplayFrequency == frequency)
+                            {
+                                int result = DisplaySettings.ChangeDisplaySettingsEx(screen.DeviceName, ref dm, IntPtr.Zero, DisplaySettings.CDS_UPDATEREGISTRY, IntPtr.Zero);
+                                if (result != DisplaySettings.DISP_CHANGE_SUCCESSFUL)
+                                {
+                                    MessageBox.Show("Не удалось изменить разрешение экрана.");
+                                }
+                                break;
+                            }
+                            modeNum++;
+                        }
+                    }
+                }
+            }
+        }
     }
 }
