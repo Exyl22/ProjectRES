@@ -20,6 +20,7 @@
 
         <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="10">
             <ComboBox x:Name="comboBox" SelectionChanged="comboBox_SelectionChanged" Style="{StaticResource MaterialDesignComboBox}" VerticalAlignment="Center" Margin="0,0,10,0" Width="155"/>
+            <Label Content="Поиск:" VerticalAlignment="Center" Margin="0,0,10,0"/>
             <TextBox x:Name="txtSearch" TextChanged="txtSearch_TextChanged" Style="{StaticResource MaterialDesignTextBox}" VerticalAlignment="Center" Width="214"/>
         </StackPanel>
 
