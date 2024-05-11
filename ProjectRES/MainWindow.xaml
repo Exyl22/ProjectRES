@@ -6,33 +6,48 @@
         xmlns:local="clr-namespace:ProjectRES"
         xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
         mc:Ignorable="d"
-        Title="ProjectRES" Height="700" Width="620"
+        Title="ProjectRES BETA 0.4v" Height="700" Width="820"
         TextElement.Foreground="{DynamicResource MaterialDesignBody}"
         Background="{DynamicResource MaterialDesignPaper}"
         FontFamily="{DynamicResource MaterialDesignFont}"
-        WindowStartupLocation="CenterScreen">
+        WindowStartupLocation="CenterScreen"
+        ResizeMode="NoResize" Cursor="">
+    <!-- Запрет изменения размеров окна -->
     <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="7*"/>
+            <ColumnDefinition Width="45*"/>
+            <ColumnDefinition Width="300"/>
+        </Grid.ColumnDefinitions>
+
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
-            <RowDefinition Height="*"/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
-        <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="10">
+        <StackPanel Grid.Row="0" Grid.Column="0" Orientation="Horizontal" Margin="10,10,10,10" Grid.ColumnSpan="2">
             <ComboBox x:Name="comboBox" SelectionChanged="comboBox_SelectionChanged" Style="{StaticResource MaterialDesignComboBox}" VerticalAlignment="Center" Margin="0,0,10,0" Width="155"/>
+            <Label Content="ГЦ:" VerticalAlignment="Center" Margin="0,0,10,0"/>
+            <ComboBox x:Name="frequencyComboBox" Style="{StaticResource MaterialDesignComboBox}" VerticalAlignment="Center" Margin="0,0,10,0" Width="55"/>
             <Label Content="Поиск:" VerticalAlignment="Center" Margin="0,0,10,0"/>
-            <TextBox x:Name="txtSearch" TextChanged="txtSearch_TextChanged" Style="{StaticResource MaterialDesignTextBox}" VerticalAlignment="Center" Width="214"/>
-            <ComboBox x:Name="frequencyComboBox" Style="{StaticResource MaterialDesignComboBox}" VerticalAlignment="Center" Margin="10,0,0,0" Width="155"/>
+            <TextBox x:Name="txtSearch" TextChanged="txtSearch_TextChanged" Style="{StaticResource MaterialDesignTextBox}" VerticalAlignment="Center" Width="130"/>
+
         </StackPanel>
 
-        <ListBox x:Name="listBox" Grid.Row="1" Margin="10" Style="{StaticResource MaterialDesignListBox}" VerticalAlignment="Top" SelectionChanged="listBox_SelectionChanged"/>
-        <Button x:Name="changeResolutionButton" Click="changeResolutionButton_Click" Content="Change Resolution" Grid.Row="2" Margin="10" Style="{StaticResource MaterialDesignRaisedButton}" VerticalAlignment="Center"/>
+        <ListBox x:Name="listBox" Grid.Row="1" Grid.Column="0" Margin="10,10,10,0" Style="{StaticResource MaterialDesignListBox}" VerticalAlignment="Top" SelectionChanged="listBox_SelectionChanged" Grid.ColumnSpan="2"/>
 
-        <ListBox x:Name="savedResolutionsListBox" Grid.Row="3" Margin="10" Style="{StaticResource MaterialDesignListBox}" VerticalAlignment="Top"/>
-        <Button x:Name="addResolutionButton" Click="addResolutionButton_Click" Content="Добавить" Grid.Row="4" Margin="10" Style="{StaticResource MaterialDesignRaisedButton}" VerticalAlignment="Center"/>
-        <Button x:Name="deleteResolutionButton" Click="deleteResolutionButton_Click" Content="Удалить" Grid.Row="5" Margin="10" Style="{StaticResource MaterialDesignRaisedButton}" VerticalAlignment="Center"/>
-    </Grid>       
+        <!-- Обновленное расположение кнопок -->
+        <StackPanel Grid.Row="2" Grid.Column="0" Orientation="Horizontal" Margin="10,10,0,10" HorizontalAlignment="Left" Grid.ColumnSpan="2">
+            <Button x:Name="changeResolutionButton" Click="changeResolutionButton_Click" Content="Применить разрешение" Style="{StaticResource MaterialDesignRaisedButton}" VerticalAlignment="Center" BorderBrush="{x:Null}"/>
+            <Button x:Name="addResolutionButton" Click="addResolutionButton_Click" Content="Добавить прессет" Margin="10,0,0,0" Style="{StaticResource MaterialDesignRaisedButton}" VerticalAlignment="Center" Background="#FF6BB99E" BorderBrush="{x:Null}"/>
+        </StackPanel>
+
+        <StackPanel Grid.Column="2" Grid.Row="0" Grid.RowSpan="3" Margin="10,10,10,10">
+            <Label Content="Кастомные прессеты" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,0,0,0" FontWeight="Bold" FontSize="18"/>
+            <ListBox x:Name="savedResolutionsListBox" Margin="10" Style="{StaticResource MaterialDesignListBox}" Height="385"/>
+            <Button x:Name="applyResolutionButton" Click="applyResolutionButton_Click" Content="Применить" Margin="10" Style="{StaticResource MaterialDesignRaisedButton}" VerticalAlignment="Center" BorderBrush="{x:Null}"/>
+            <Button x:Name="deleteResolutionButton" Click="deleteResolutionButton_Click" Content="Удалить" Margin="10" Style="{StaticResource MaterialDesignRaisedButton}" VerticalAlignment="Center" Background="#FFB96A78" BorderBrush="{x:Null}"/>
+        </StackPanel>
+    </Grid>
 </Window>

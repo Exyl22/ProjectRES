@@ -36,7 +36,9 @@ namespace ProjectRES
             public const int DISP_CHANGE_SUCCESSFUL = 0;
             public const int DISP_CHANGE_RESTART = 1;
             public const int DISP_CHANGE_FAILED = -1;
-
+            public const int DM_PELSWIDTH = 0x80000;
+            public const int DM_PELSHEIGHT = 0x100000;
+            public const int DM_DISPLAYFREQUENCY = 0x400000;
             [StructLayout(LayoutKind.Sequential)]
             public struct DEVMODE
             {
@@ -74,6 +76,7 @@ namespace ProjectRES
                 public int dmReserved2;
                 public int dmPanningWidth;
                 public int dmPanningHeight;
+
             }
 
             public enum ScreenOrientation : uint
@@ -100,6 +103,7 @@ namespace ProjectRES
         {
             InitializeComponent();
             LoadSavedResolutions();
+            comboBox.SelectedIndex = 0;
             foreach (var screen in System.Windows.Forms.Screen.AllScreens)
             {
                 ComboBoxItem item = new ComboBoxItem();
@@ -111,14 +115,23 @@ namespace ProjectRES
 
         private void addResolutionButton_Click(object sender, RoutedEventArgs e)
         {
-            string selectedResolution = listBox.SelectedItem?.ToString();
+            string selectedResolution = listBox.SelectedItem?.ToString();   
             string selectedFrequency = frequencyComboBox.SelectedItem?.ToString();
 
             if (!string.IsNullOrEmpty(selectedResolution) && !string.IsNullOrEmpty(selectedFrequency))
             {
                 string resolutionPreset = $"{selectedResolution}, {selectedFrequency}";
-                savedResolutionsListBox.Items.Add(resolutionPreset);
-                SaveResolutionPresetToFile(resolutionPreset);
+
+                // Проверка на существование такого же разрешения с частотой обновления
+                if (savedResolutionsListBox.Items.Cast<string>().Any(item => item.Equals(resolutionPreset)))
+                {
+                    MessageBox.Show("Такое разрешение с частотой обновления уже существует.");
+                }
+                else
+                {
+                    savedResolutionsListBox.Items.Add(resolutionPreset);
+                    SaveResolutionPresetToFile(resolutionPreset);
+                }
             }
             else
             {
@@ -131,11 +144,18 @@ namespace ProjectRES
 
             if (selectedItem != null)
             {
-                // Удаление выбранного элемента из ListBox
-                savedResolutionsListBox.Items.Remove(selectedItem);
+                // Диалоговое окно с подтверждением удаления
+                var result = MessageBox.Show($"Вы действительно хотите удалить - {selectedItem}?", "Подтверждение удаления", MessageBoxButton.YesNo, MessageBoxImage.Question);
 
-                // Удаление строки из файла
-                DeleteResolutionPresetFromFile(selectedItem.ToString());
+                // Проверка выбора пользователя
+                if (result == MessageBoxResult.Yes)
+                {
+                    // Удаление выбранного элемента из ListBox
+                    savedResolutionsListBox.Items.Remove(selectedItem);
+
+                    // Удаление строки из файла
+                    DeleteResolutionPresetFromFile(selectedItem.ToString());
+                }
             }
             else
             {
@@ -256,12 +276,59 @@ namespace ProjectRES
             string searchText = txtSearch.Text.Trim().ToLower();
 
             listBox.Items.Clear();
-            foreach (string resolution in uniqueResolutions)
-            {
-                if (resolution.ToLower().Contains(searchText))
+            var filteredResolutions = uniqueResolutions
+                .Where(resolution => resolution.ToLower().Contains(searchText))
+                .Select(r => new
                 {
-                    listBox.Items.Add(resolution);
+                    Resolution = r,
+                    Width = int.Parse(r.Split('x')[0]),
+                    Height = int.Parse(r.Split('x')[1])
+                })
+                .OrderByDescending(r => r.Width)
+                .ThenByDescending(r => r.Height)
+                .Select(r => r.Resolution);
+
+            foreach (var resolution in filteredResolutions)
+            {
+                listBox.Items.Add(resolution);
+            }
+        }
+        private void applyResolutionButton_Click(object sender, RoutedEventArgs e)
+        {
+            var selectedItem = savedResolutionsListBox.SelectedItem?.ToString();
+            if (!string.IsNullOrEmpty(selectedItem))
+            {
+                // Разбор строки с разрешением и частотой обновления
+                var parts = selectedItem.Split(new string[] { ", " }, StringSplitOptions.None);
+                var resolution = parts[0].Split('x');
+                var frequency = parts[1].Replace("Hz", "");
+
+                int width = int.Parse(resolution[0]);
+                int height = int.Parse(resolution[1]);
+                int displayFrequency = int.Parse(frequency);
+
+                DisplaySettings.DEVMODE dm = new DisplaySettings.DEVMODE();
+                dm.dmSize = (short)Marshal.SizeOf(typeof(DisplaySettings.DEVMODE));
+                dm.dmPelsWidth = width;
+                dm.dmPelsHeight = height;
+                dm.dmDisplayFrequency = displayFrequency;
+                dm.dmFields = DisplaySettings.DM_PELSWIDTH | DisplaySettings.DM_PELSHEIGHT | DisplaySettings.DM_DISPLAYFREQUENCY;
+
+                string selectedScreen = System.Windows.Forms.Screen.PrimaryScreen.DeviceName; // Используйте PrimaryScreen для примера, замените на выбранный экран, если нужно
+
+                int result = DisplaySettings.ChangeDisplaySettingsEx(selectedScreen, ref dm, IntPtr.Zero, DisplaySettings.CDS_UPDATEREGISTRY, IntPtr.Zero);
+                if (result == DisplaySettings.DISP_CHANGE_SUCCESSFUL)
+                {
+                    MessageBox.Show($"Применено разрешение: {width}x{height}, {displayFrequency}Hz");
                 }
+                else
+                {
+                    MessageBox.Show("Не удалось изменить разрешение экрана.");
+                }
+            }
+            else
+            {
+                MessageBox.Show("Выберите разрешение для применения.");
             }
         }
         private void changeResolutionButton_Click(object sender, RoutedEventArgs e)
