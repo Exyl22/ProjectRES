@@ -6,7 +6,7 @@
         xmlns:local="clr-namespace:ProjectRES"
         xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
         mc:Ignorable="d"
-        Title="ProjectRES BETA 0.42v" Height="700" Width="820"
+        Title="ProjectRES BETA 0.43v" Height="700" Width="820"
         TextElement.Foreground="{DynamicResource MaterialDesignBody}"
         Background="{DynamicResource MaterialDesignPaper}"
         FontFamily="{DynamicResource MaterialDesignFont}"

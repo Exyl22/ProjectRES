@@ -319,7 +319,7 @@ namespace ProjectRES
                 int result = DisplaySettings.ChangeDisplaySettingsEx(selectedScreen, ref dm, IntPtr.Zero, DisplaySettings.CDS_UPDATEREGISTRY, IntPtr.Zero);
                 if (result == DisplaySettings.DISP_CHANGE_SUCCESSFUL)
                 {
-                    MessageBox.Show($"Применено разрешение: {width}x{height}, {displayFrequency}Hz");
+
                 }
                 else
                 {
