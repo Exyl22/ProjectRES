@@ -93,8 +93,8 @@ namespace ProjectRES
                 ComboBoxItem item = new ComboBoxItem();
                 item.Content = screen.DeviceName;
                 comboBox.Items.Add(item);
-                comboBox.SelectedIndex = 0;
             }
+            listBox.SelectionChanged += listBox_SelectionChanged;
         }
         private void comboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
@@ -103,6 +103,7 @@ namespace ProjectRES
             if (selectedScreen != null)
             {
                 listBox.Items.Clear();
+                uniqueResolutions.Clear(); // Очищаем HashSet при каждом выборе нового дисплея
 
                 foreach (var screen in System.Windows.Forms.Screen.AllScreens)
                 {
@@ -110,14 +111,12 @@ namespace ProjectRES
                     {
                         DisplaySettings.DEVMODE dm = new DisplaySettings.DEVMODE();
                         int modeNum = 0;
-
-                        // Добавляем разрешения в список, но не добавляем их в HashSet
                         List<string> resolutions = new List<string>();
 
                         while (DisplaySettings.EnumDisplaySettings(screen.DeviceName, modeNum, ref dm))
                         {
-                            string resolution = $"{dm.dmPelsWidth}x{dm.dmPelsHeight}, {dm.dmDisplayFrequency}Hz";
-                            if (uniqueResolutions.Add(resolution)) // Проверяем на уникальность
+                            string resolution = $"{dm.dmPelsWidth}x{dm.dmPelsHeight}";
+                            if (uniqueResolutions.Add(resolution)) // Условие будет истинным для всех разрешений выбранного дисплея
                             {
                                 if (dm.dmBitsPerPel == 32) // Проверяем, является ли разрешение системным
                                 {
@@ -127,10 +126,22 @@ namespace ProjectRES
                             modeNum++;
                         }
 
-                        // Добавляем разрешения в список в обратном порядке
-                        for (int i = resolutions.Count - 1; i >= 0; i--)
+                        // Сортировка списка разрешений от большего к меньшему
+                        var sortedResolutions = resolutions
+                            .Distinct() // Убедитесь, что добавляете только уникальные значения
+                            .Select(r => new
+                            {
+                                Resolution = r,
+                                Width = int.Parse(r.Split('x')[0]),
+                                Height = int.Parse(r.Split('x')[1])
+                            })
+                            .OrderByDescending(r => r.Width)
+                            .ThenByDescending(r => r.Height)
+                            .Select(r => r.Resolution);
+
+                        foreach (var res in sortedResolutions)
                         {
-                            listBox.Items.Add(resolutions[i]);
+                            listBox.Items.Add(res);
                         }
 
                         break;
@@ -138,7 +149,33 @@ namespace ProjectRES
                 }
             }
         }
+        private void listBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            string selectedResolution = listBox.SelectedItem?.ToString();
+            if (selectedResolution != null)
+            {
+                frequencyComboBox.Items.Clear();
 
+                string selectedScreen = ((ComboBoxItem)comboBox.SelectedItem)?.Content.ToString();
+                DisplaySettings.DEVMODE dm = new DisplaySettings.DEVMODE();
+                int modeNum = 0;
+                HashSet<int> uniqueFrequencies = new HashSet<int>();
+
+                while (DisplaySettings.EnumDisplaySettings(selectedScreen, modeNum, ref dm))
+                {
+                    if ($"{dm.dmPelsWidth}x{dm.dmPelsHeight}" == selectedResolution && uniqueFrequencies.Add(dm.dmDisplayFrequency))
+                    {
+                        frequencyComboBox.Items.Add($"{dm.dmDisplayFrequency}Hz");
+                    }
+                    modeNum++;
+                }
+
+                if (frequencyComboBox.Items.Count > 0)
+                {
+                    frequencyComboBox.SelectedIndex = 0;
+                }
+            }
+        }
         private void txtSearch_TextChanged(object sender, TextChangedEventArgs e)
         {
             string searchText = txtSearch.Text.Trim().ToLower();
@@ -158,16 +195,29 @@ namespace ProjectRES
 
             if (selectedResolution != null)
             {
-                var match = Regex.Match(selectedResolution, @"(\d+)x(\d+), (\d+)Hz");
+                var match = Regex.Match(selectedResolution, @"(\d+)x(\d+)");
                 if (match.Success)
                 {
                     int width = int.Parse(match.Groups[1].Value);
                     int height = int.Parse(match.Groups[2].Value);
-                    int frequency = int.Parse(match.Groups[3].Value);
+
+                    string selectedFrequencyItem = frequencyComboBox.SelectedItem?.ToString();
+                    var frequencyMatch = Regex.Match(selectedFrequencyItem, @"(\d+)Hz");
+                    int frequency; // Объявляем переменную заранее
+                    if (frequencyMatch.Success && int.TryParse(frequencyMatch.Groups[1].Value, out frequency)) // Используем out для присвоения значения
+                    {
+                        // Теперь у вас есть переменная frequency, содержащая выбранную частоту обновления
+                        // Используйте эту частоту при поиске соответствующего режима в EnumDisplaySettings
+                    }
+                    else
+                    {
+                        // Обработка ситуации, когда частота не была успешно извлечена
+                        MessageBox.Show("Не удалось определить частоту обновления.");
+                        return; // Выходим из метода, если частота не определена
+                    }
 
                     string selectedScreen = ((ComboBoxItem)comboBox.SelectedItem)?.Content.ToString();
                     var screen = System.Windows.Forms.Screen.AllScreens.FirstOrDefault(s => s.DeviceName == selectedScreen);
-
                     if (screen != null)
                     {
                         DisplaySettings.DEVMODE dm = new DisplaySettings.DEVMODE();
