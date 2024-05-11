@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -84,10 +85,21 @@ namespace ProjectRES
             }
         }
         private readonly HashSet<string> uniqueResolutions = new HashSet<string>();
-
+        private void LoadSavedResolutions()
+        {
+            string filePath = "savedResolutions.txt";
+            if (File.Exists(filePath))
+            {
+                foreach (var line in File.ReadAllLines(filePath))
+                {
+                    savedResolutionsListBox.Items.Add(line);
+                }
+            }
+        }
         public MainWindow()
         {
             InitializeComponent();
+            LoadSavedResolutions();
             foreach (var screen in System.Windows.Forms.Screen.AllScreens)
             {
                 ComboBoxItem item = new ComboBoxItem();
@@ -96,6 +108,69 @@ namespace ProjectRES
             }
             listBox.SelectionChanged += listBox_SelectionChanged;
         }
+
+        private void addResolutionButton_Click(object sender, RoutedEventArgs e)
+        {
+            string selectedResolution = listBox.SelectedItem?.ToString();
+            string selectedFrequency = frequencyComboBox.SelectedItem?.ToString();
+
+            if (!string.IsNullOrEmpty(selectedResolution) && !string.IsNullOrEmpty(selectedFrequency))
+            {
+                string resolutionPreset = $"{selectedResolution}, {selectedFrequency}";
+                savedResolutionsListBox.Items.Add(resolutionPreset);
+                SaveResolutionPresetToFile(resolutionPreset);
+            }
+            else
+            {
+                MessageBox.Show("Выберите разрешение и частоту обновления.");
+            }
+        }
+        private void deleteResolutionButton_Click(object sender, RoutedEventArgs e)
+        {
+            var selectedItem = savedResolutionsListBox.SelectedItem;
+
+            if (selectedItem != null)
+            {
+                // Удаление выбранного элемента из ListBox
+                savedResolutionsListBox.Items.Remove(selectedItem);
+
+                // Удаление строки из файла
+                DeleteResolutionPresetFromFile(selectedItem.ToString());
+            }
+            else
+            {
+                MessageBox.Show("Выберите разрешение для удаления.");
+            }
+        }
+
+        private void DeleteResolutionPresetFromFile(string resolutionPreset)
+        {
+            string filePath = "savedResolutions.txt";
+            if (File.Exists(filePath))
+            {
+                // Чтение всех строк из файла
+                var lines = File.ReadAllLines(filePath).ToList();
+
+                // Удаление строки, соответствующей выбранному разрешению
+                lines.Remove(resolutionPreset);
+
+                // Перезапись файла без удалённой строки
+                File.WriteAllLines(filePath, lines);
+            }
+        }
+        private void SaveResolutionPresetToFile(string resolutionPreset)
+        {
+            string filePath = "savedResolutions.txt";
+            try
+            {
+                File.AppendAllText(filePath, resolutionPreset + Environment.NewLine);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Ошибка при сохранении файла: {ex.Message}");
+            }
+        }
+
         private void comboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             string selectedScreen = ((ComboBoxItem)comboBox.SelectedItem)?.Content.ToString();

@@ -6,7 +6,7 @@
         xmlns:local="clr-namespace:ProjectRES"
         xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
         mc:Ignorable="d"
-        Title="ProjectRES" Height="700" Width="600"
+        Title="ProjectRES" Height="700" Width="620"
         TextElement.Foreground="{DynamicResource MaterialDesignBody}"
         Background="{DynamicResource MaterialDesignPaper}"
         FontFamily="{DynamicResource MaterialDesignFont}"
@@ -15,6 +15,9 @@
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
@@ -27,5 +30,9 @@
 
         <ListBox x:Name="listBox" Grid.Row="1" Margin="10" Style="{StaticResource MaterialDesignListBox}" VerticalAlignment="Top" SelectionChanged="listBox_SelectionChanged"/>
         <Button x:Name="changeResolutionButton" Click="changeResolutionButton_Click" Content="Change Resolution" Grid.Row="2" Margin="10" Style="{StaticResource MaterialDesignRaisedButton}" VerticalAlignment="Center"/>
-    </Grid>
+
+        <ListBox x:Name="savedResolutionsListBox" Grid.Row="3" Margin="10" Style="{StaticResource MaterialDesignListBox}" VerticalAlignment="Top"/>
+        <Button x:Name="addResolutionButton" Click="addResolutionButton_Click" Content="Добавить" Grid.Row="4" Margin="10" Style="{StaticResource MaterialDesignRaisedButton}" VerticalAlignment="Center"/>
+        <Button x:Name="deleteResolutionButton" Click="deleteResolutionButton_Click" Content="Удалить" Grid.Row="5" Margin="10" Style="{StaticResource MaterialDesignRaisedButton}" VerticalAlignment="Center"/>
+    </Grid>       
 </Window>
